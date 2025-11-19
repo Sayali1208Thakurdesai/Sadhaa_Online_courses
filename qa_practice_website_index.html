@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QA Practice Website - Enhanced</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3f6ff; margin:0; padding:20px }
+    header{background:#4b79ff;color:#fff;padding:16px;border-radius:8px;text-align:center}
+    .container{background:#fff;padding:18px;border-radius:8px;max-width:900px;margin:18px auto;box-shadow:0 6px 20px rgba(0,0,0,0.06)}
+    input, select, button, textarea{padding:8px;margin:8px 0;width:100%;box-sizing:border-box}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .small{width:auto}
+    .product{border:1px solid #eee;padding:12px;border-radius:6px;margin-bottom:10px}
+    .dropzone{border:2px dashed #9aa9ff;padding:20px;text-align:center;border-radius:8px}
+    img{max-width:150px;margin-right:10px}
+    .inline{display:inline-block;width:auto}
+    .error{color:#b00020}
+  </style>
+</head>
+<body>
+  <header>QA Automation Practice Website - Enhanced</header>
+
+  <div class="container">
+    <h3>1) Login (with subtle bug)</h3>
+    <!-- Bug #1: Accepts only admin / admin123 but validation message is reversed (shows success on wrong creds) -->
+    <input data-testid="username" id="username" placeholder="Username (try admin)" />
+    <input data-testid="password" id="password" type="password" placeholder="Password (try admin123)" />
+    <button id="loginBtn" onclick="login()">Login</button>
+    <p id="loginMessage"></p>
+  </div>
+
+  <div class="container">
+    <h3>2) Checkboxes & Radio Buttons</h3>
+    <div class="product">
+      <label><input type="checkbox" name="skills" value="selenium" data-testid="chk-selenium"> Selenium</label><br>
+      <label><input type="checkbox" name="skills" value="api" data-testid="chk-api"> API Testing</label><br>
+      <!-- Bug #2: duplicate id 'chk-duplicate' used twice -->
+      <label id="chk-duplicate"><input type="checkbox" id="chk-duplicate" value="buggy"> Buggy Checkbox</label>
+    </div>
+
+    <div class="product">
+      <p>Select experience level:</p>
+      <label><input type="radio" name="exp" value="junior" data-testid="radio-junior"> Junior</label>
+      <label><input type="radio" name="exp" value="mid" data-testid="radio-mid"> Mid</label>
+      <label><input type="radio" name="exp" value="senior" data-testid="radio-senior"> Senior</label>
+    </div>
+  </div>
+
+  <div class="container">
+    <h3>3) File Upload & Drag-and-Drop</h3>
+    <p>Upload your resume (PDF only):</p>
+    <!-- Bug #3: accept attribute missing so it accepts all files -->
+    <input type="file" id="resume" data-testid="file-resume" />
+    <p>Or drag & drop an image below:</p>
+    <div id="dropzone" class="dropzone" data-testid="dropzone">Drop files here</div>
+    <div id="dropResult"></div>
+  </div>
+
+  <div class="container">
+    <h3>4) Images (one broken intentionally)</h3>
+    <div class="row">
+      <img src="https://via.placeholder.com/150" alt="sample1" data-testid="img-1">
+      <img src="/this-image-does-not-exist.jpg" alt="" data-testid="img-broken"> <!-- Bug #4: broken image src and missing alt -->
+      <img src="https://via.placeholder.com/150/0000FF/808080?text=OK" data-testid="img-3"> <!-- Bug #5: missing alt for automation -->
+    </div>
+  </div>
+
+  <div class="container">
+    <h3>5) Form with validation quirks</h3>
+    <label for="email">Email</label>
+    <input id="email" data-testid="email" placeholder="you@example.com">
+    <label for="age">Age</label>
+    <input id="age" data-testid="age" type="number" placeholder="18">
+    <!-- Bug #6: Submit button disabled but no clear reason (disabled by default). -->
+    <button id="submitForm" disabled onclick="submitForm()">Submit Form</button>
+    <p id="formMsg"></p>
+  </div>
+
+  <div class="container">
+    <h3>6) Buttons and Links</h3>
+    <button id="disabledBtn" disabled data-testid="disabled-btn">Disabled Button</button>
+    <a id="brokenLink" href="/non-existent-page.html" data-testid="broken-link">Go to broken link</a> <!-- Bug #7: 404 link -->
+  </div>
+
+  <!-- Developer notes: Below are intentional bugs for testers. Use these to write negative tests, edge cases, and accessibility checks. -->
+  <!-- Bugs summary:
+        1) Login message logic reversed -> incorrect success/fail text
+        2) Duplicate id attribute on checkboxes
+        3) File input missing accept attribute (should accept .pdf only)
+        4) One image has broken src and missing alt text
+        5) Another image missing alt text
+        6) Submit button disabled initially with no instruction to enable
+        7) Broken link leads to 404
+        8) Some elements have no labels for accessibility
+  -->
+
+  <script>
+    function login() {
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      const msg = document.getElementById('loginMessage');
+      // Intentionally buggy logic: considered *invalid* creds as success
+      if (u === 'admin' && p === 'admin123') {
+        msg.innerText = 'Invalid Credentials';
+        msg.className = 'error';
+      } else {
+        msg.innerText = 'Login Successful';
+        msg.className = '';
+      }
+    }
+
+    // Drag & drop logic
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.style.background='#dbe8ff'; });
+    dropzone.addEventListener('dragleave', ()=>{ dropzone.style.background=''; });
+    dropzone.addEventListener('drop', (e)=>{
+      e.preventDefault(); dropzone.style.background='';
+      const files = e.dataTransfer.files;
+      if(files.length){
+        document.getElementById('dropResult').innerText = files[0].name + ' dropped';
+      }
+    });
+
+    // File input change
+    document.getElementById('resume').addEventListener('change', function(e){
+      const f = e.target.files[0];
+      if(f){ document.getElementById('dropResult').innerText = 'Selected: ' + f.name; }
+    });
+
+    // Enable submit when age > 18 (intentionally not wired to email) -> testers should find and fix
+    document.getElementById('age').addEventListener('input', function(e){
+      const val = Number(e.target.value);
+      if(val > 18){ document.getElementById('submitForm').disabled = false; }
+      else{ document.getElementById('submitForm').disabled = true; }
+    });
+
+    function submitForm(){
+      const email = document.getElementById('email').value;
+      const age = document.getElementById('age').value;
+      document.getElementById('formMsg').innerText = `Submitted: ${email} / ${age}`;
+    }
+  </script>
+</body>
+</html>
